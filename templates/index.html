@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sunset Fall - 夕暮れの落下</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- ヘッダー -->
+    <header class="app-header">
+      <div class="logo">
+        <span class="logo-icon">🌅</span>
+        <h1>SUNSET FALL</h1>
+        <span class="subtitle">夕暮れを駆け抜けるスピードアクション</span>
+      </div>
+      <div class="header-controls">
+        <button id="soundToggleBtn" class="pill-btn" title="BGM/効果音 切替">
+          <span class="icon">🔊</span>
+          <span class="label">SOUND ON</span>
+        </button>
+        <button id="rankingModalBtn" class="pill-btn ghost">
+          <span class="icon">🏆</span>
+          <span class="label">ランキング</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- メインゲームエリア -->
+    <main class="game-wrapper">
+      <div class="canvas-container">
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+        <!-- スタートオーバーレイ -->
+        <div id="startOverlay" class="screen-overlay">
+          <div class="card glass">
+            <h2 class="glow-title">SUNSET FALL</h2>
+            <p class="tagline">沈みゆく夕日と、降り注ぐ光の欠片をかわせ</p>
+            
+            <div class="instructions">
+              <div class="instruction-item">
+                <span class="badge">操作</span>
+                <span>[←][→] または [A][D]、マウス / タッチで左右移動</span>
+              </div>
+              <div class="instruction-item">
+                <span class="badge dodge">回避</span>
+                <span>上から落ちてくる「夕日の欠片」に当たらないように回避！</span>
+              </div>
+              <div class="instruction-item">
+                <span class="badge star">獲得</span>
+                <span>輝く「一番星 ⭐」を取るとボーナス +100点</span>
+              </div>
+            </div>
+
+            <div class="stage-selector">
+              <span class="stage-label">背景ステージ:</span>
+              <button id="prevStageBtn" class="stage-arrow" title="前のステージ">◀</button>
+              <span id="currentStageDisplay" class="stage-name">第 1 幕 · 茜空の鳥居</span>
+              <button id="nextStageBtn" class="stage-arrow" title="次のステージ">▶</button>
+            </div>
+
+            <button id="startGameBtn" class="cta-btn pulse">
+              <span>旅を始める (START)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ゲームオーバー オーバーレイ -->
+        <div id="gameOverOverlay" class="screen-overlay hidden">
+          <div class="card glass">
+            <div id="gameOverStageBadge" class="sunset-badge">第 1 幕 · 茜空の鳥居</div>
+            <h2 class="gameover-title">夕暮れの果てに</h2>
+            
+            <div class="final-stats">
+              <div class="stat-box">
+                <span class="stat-label">TOTAL SCORE</span>
+                <span id="finalScore" class="stat-value highlight">0</span>
+              </div>
+              <div class="stat-row">
+                <div class="sub-stat">
+                  <span class="sub-label">生存時間</span>
+                  <span id="finalTime" class="sub-value">0.0s</span>
+                </div>
+                <div class="sub-stat">
+                  <span class="sub-label">星の獲得</span>
+                  <span id="finalStars" class="sub-value">0 ⭐</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- スコア送信フォーム -->
+            <form id="scoreSubmitForm" class="score-form">
+              <label for="playerNameInput">あなたの名前を夕暮れに刻む</label>
+              <div class="input-row">
+                <input type="text" id="playerNameInput" maxlength="12" placeholder="プレイヤー名" required>
+                <button type="submit" id="submitScoreBtn" class="send-btn">
+                  <span>登録</span>
+                </button>
+              </div>
+              <p id="submitMsg" class="submit-msg"></p>
+            </form>
+
+            <div class="gameover-actions">
+              <button id="retryBtn" class="cta-btn small">
+                <span>もう一度飛ぶ (RETRY)</span>
+              </button>
+              <button id="showRankingAfterOverBtn" class="pill-btn ghost small">
+                <span>ランキングを見る</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- サイドバー: リアルタイムリーダーボード & 統計 -->
+      <aside class="sidebar">
+        <section class="leaderboard-card glass">
+          <div class="card-header">
+            <h3>🏆 夕暮れの旅人たち (TOP 10)</h3>
+            <button id="refreshRankingBtn" class="icon-btn" title="更新">🔄</button>
+          </div>
+          <div class="ranking-list-container">
+            <ol id="rankingList" class="ranking-list">
+              <li class="loading-item">データを読み込み中...</li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="stats-card glass">
+          <h4>📊 全体統計</h4>
+          <div class="stats-grid">
+            <div class="stat-mini">
+              <span class="mini-label">ハイスコア</span>
+              <span id="globalHighScore" class="mini-val">-</span>
+            </div>
+            <div class="stat-mini">
+              <span class="mini-label">総フライト数</span>
+              <span id="globalTotalPlays" class="mini-val">-</span>
+            </div>
+            <div class="stat-mini">
+              <span class="mini-label">集められた星</span>
+              <span id="globalTotalStars" class="mini-val">-</span>
+            </div>
+            <div class="stat-mini">
+              <span class="mini-label">平均スコア</span>
+              <span id="globalAvgScore" class="mini-val">-</span>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <!-- フッター -->
+    <footer class="app-footer">
+      <p>Sunset Fall &copy; 2026 - Powered by Python & SQLite</p>
+    </footer>
+  </div>
+
+  <script src="/static/js/audio.js"></script>
+  <script src="/static/js/game.js"></script>
+</body>
+</html>
